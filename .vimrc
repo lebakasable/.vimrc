@@ -1,20 +1,27 @@
+syntax on
+set encoding=utf-8
+set termguicolors
+
 set timeoutlen=1000
 set ttimeoutlen=0
+set updatetime=300
+set signcolumn=yes
+set clipboard=unnamedplus
 
 set number
 set relativenumber
 
+set laststatus=2
 set scrolloff=5
 set nowrap
 
 set shiftwidth=2
 set tabstop=2
-set foldcolumn=1
 
 set noshowmode
-set laststatus=2
 set wildmenu
 
+set incsearch
 set hlsearch
 set cursorline
 
@@ -31,7 +38,8 @@ let mapleader = ' '
 
 call plug#begin()
 
-Plug 'catppuccin/vim', { 'as': 'catppuccin' }
+Plug 'dracula/vim', { 'as': 'dracula' }
+Plug 'ryanoasis/vim-devicons'
 Plug 'itchyny/lightline.vim'
 Plug 'machakann/vim-highlightedyank'
 
@@ -41,54 +49,99 @@ Plug 'tpope/vim-commentary'
 
 Plug 'junegunn/fzf', { 'do': { -> fzf#install()  }  }
 Plug 'junegunn/fzf.vim'
-Plug 'tpope/vim-vinegar'
+Plug 'mbbill/undotree'
+Plug 'mcchrish/nnn.vim'
 
 Plug 'sheerun/vim-polyglot'
+Plug 'tpope/vim-fugitive'
 
-Plug 'prabirshrestha/vim-lsp'
-Plug 'mattn/vim-lsp-settings'
-Plug 'prabirshrestha/asyncomplete.vim'
-Plug 'prabirshrestha/asyncomplete-lsp.vim'
+Plug 'neoclide/coc.nvim', {'branch': 'release'}
+Plug 'Exafunction/codeium.vim'
 
 call plug#end()
 
-set termguicolors
-colorscheme catppuccin_mocha
+colorscheme dracula
 
-let g:lightline = { 'colorscheme': 'catppuccin_mocha' }
-
-let g:highlightedyank_highlight_duration = 200
-
-function! s:on_lsp_buffer_enabled() abort
-  set foldcolumn=0
-  setlocal omnifunc=lsp#complete
-  setlocal signcolumn=yes
-  if exists('+tagfunc') | setlocal tagfunc=lsp#tagfunc | endif
-  nmap <buffer> gd <plug>(lsp-definition)
-  nmap <buffer> gs <plug>(lsp-document-symbol-search)
-  nmap <buffer> gS <plug>(lsp-workspace-symbol-search)
-  nmap <buffer> gr <plug>(lsp-references)
-  nmap <buffer> gi <plug>(lsp-implementation)
-  nmap <buffer> gt <plug>(lsp-type-definition)
-  nmap <buffer> <leader>lr <plug>(lsp-rename)
-  nmap <buffer> <leader>la <plug>(lsp-code-action)
-  nmap <buffer> [g <plug>(lsp-previous-diagnostic)
-  nmap <buffer> ]g <plug>(lsp-next-diagnostic)
-  nmap <buffer> K <plug>(lsp-hover)
-  nnoremap <buffer> <expr><c-f> lsp#scroll(+4)
-  nnoremap <buffer> <expr><c-d> lsp#scroll(-4)
-  
-  let g:lsp_format_sync_timeout = 1000
-  autocmd! BufWritePre * call execute('LspDocumentFormatSync')
+function! CocCurrentFunction()
+    return get(b:, 'coc_current_function', '')
 endfunction
 
-augroup lsp_install
-  au!
-  autocmd User lsp_buffer_enabled call s:on_lsp_buffer_enabled()
-augroup END
+let g:lightline = {
+      \ 'colorscheme': 'dracula',
+      \ 'active': {
+      \   'left': [ [ 'mode', 'paste' ],
+      \             [ 'cocstatus', 'currentfunction', 'readonly', 'filename', 'modified' ] ]
+      \ },
+      \ 'component_function': {
+      \   'cocstatus': 'coc#status',
+      \   'currentfunction': 'CocCurrentFunction'
+      \ },
+      \ }
+
+let g:highlightedyank_highlight_duration = 200
 
 nnoremap <silent> <Esc> :noh<CR>
 nnoremap U <C-r>
 
-nnoremap <leader>fe :Vexplore<CR>
+nnoremap <leader>fe :NnnExplorer<CR>
+nnoremap <leader>fp :NnnPicker<CR>
 nnoremap <leader>ff :FZF<CR>
+nnoremap <leader>fb :Buffers<CR>
+
+nmap <Tab>   :bn<CR>
+nmap <S-Tab> :bp<CR>
+nnoremap <leader>x :bd<CR>
+
+nnoremap <leader>u :UndotreeToggle<CR>
+
+nnoremap <leader>gi :Git init<CR>
+nnoremap <leader>gs :Git status<CR>
+nnoremap <leader>ga :Git add<CR>
+nnoremap <leader>gc :Git commit<CR>
+
+autocmd CursorHold * silent call CocActionAsync('highlight')
+
+nmap <silent> [g <Plug>(coc-diagnostic-prev)
+nmap <silent> ]g <Plug>(coc-diagnostic-next)
+
+nmap <silent> gd <Plug>(coc-definition)
+nmap <silent> gy <Plug>(coc-type-definition)
+nmap <silent> gi <Plug>(coc-implementation)
+nmap <silent> gr <Plug>(coc-references)
+
+nnoremap <silent> K :call ShowDocumentation()<CR>
+
+function! ShowDocumentation()
+	if CocAction('hasProvider', 'hover')
+		call CocActionAsync('doHover')
+	else
+		call feedkeys('K', 'in')
+	endif
+endfunction
+
+nnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
+nnoremap <silent><nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
+inoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(1)\<cr>" : "\<Right>"
+inoremap <silent><nowait><expr> <C-b> coc#float#has_scroll() ? "\<c-r>=coc#float#scroll(0)\<cr>" : "\<Left>"
+vnoremap <silent><nowait><expr> <C-f> coc#float#has_scroll() ? coc#float#scroll(1) : "\<C-f>"
+vnoremap <silent><nowait><expr> <C-b> coc#float#has_scroll() ? coc#float#scroll(0) : "\<C-b>"
+
+inoremap <silent><expr> <CR> coc#pum#visible() ? coc#pum#confirm() : "\<CR>"
+
+nmap <leader>rn <Plug>(coc-rename)
+nmap <leader>ca <Plug>(coc-codeaction-cursor)
+
+nmap <silent> <C-s> <Plug>(coc-range-select)
+
+command! -nargs=0 Format :call CocActionAsync('format')
+command! -nargs=0 OR     :call CocActionAsync('runCommand', 'editor.action.organizeImport')
+
+highlight CocSearch ctermfg=blue
+highlight CocErrorSign ctermfg=red
+highlight CocWarningSign ctermfg=yellow
+highlight CocInfoSign ctermfg=green
+highlight CocInlayHint ctermfg=darkgrey
+highlight CocNotificationProgress ctermfg=magenta
+highlight CocNotificationError ctermfg=red
+highlight CocNotificationWarning ctermfg=yellow
+highlight CocNotificationInfo ctermfg=green
